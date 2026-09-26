@@ -1,0 +1,8 @@
+# # MaintenOps
+
+MaintenOps is a modern, high-performance maintenance management system for **ISKCON NVCC**.
+
+To view the full project details, architecture, and setup instructions, please refer to the comprehensive [DOCUMENTATION.md](file:///n:/MaintenOps/DOCUMENTATION.md).
+
+---
+*Efficiency meets Excellence.*
