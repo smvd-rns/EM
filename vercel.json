@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd MOps-frontend && npm install && npm run build",
+  "outputDirectory": "MOps-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
