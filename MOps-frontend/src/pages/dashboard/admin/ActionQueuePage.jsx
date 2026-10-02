@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { requestService } from '../../../services/requestService';
 import AdminReviewModal from '../../../components/requests/AdminReviewModal';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Pagination from '../../../components/common/Pagination';
 
 /**
  * Action Queue — Admin operations command center.
@@ -35,6 +36,12 @@ const ActionQueuePage = () => {
     const [actionLoading, setActionLoading] = useState(null);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [showReviewModal, setShowReviewModal] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tab]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -365,6 +372,7 @@ const ActionQueuePage = () => {
     };
 
     const activeList = tab === 'pending' ? pendingRequests : tab === 'waiting' ? waitingRequests : completedRequests;
+    const paginatedList = activeList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     return (
         <div className="relative min-h-screen pb-24">
@@ -445,9 +453,17 @@ const ActionQueuePage = () => {
                     </div>
                 ) : (
                     <div className="space-y-5">
-                        {activeList.map(req => (
+                        {paginatedList.map(req => (
                             <RequestCard key={req.id} req={req} />
                         ))}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalItems={activeList.length}
+                            pageSize={pageSize}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={setPageSize}
+                            pageSizeOptions={[10, 30, 50]}
+                        />
                     </div>
                 )}
             </div>

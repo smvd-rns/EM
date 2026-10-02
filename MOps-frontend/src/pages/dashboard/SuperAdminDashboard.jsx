@@ -3,10 +3,12 @@ import { requestService } from '../../services/requestService';
 import SuperAdminReviewModal from '../../components/requests/SuperAdminReviewModal';
 import SARequestDetailModal from '../../components/requests/SARequestDetailModal';
 import UserManagementSection from '../../components/dashboard/superadmin/UserManagementSection';
+import MaterialsPage from './admin/MaterialsPage';
+import StoreInventoryPage from './store/StoreInventoryPage';
 
 /**
  * Super Admin Dashboard — clean card-based layout.
- * System Operations + User Role Management.
+ * System Operations + User Role Management + Material Database + Store Inventory.
  */
 
 const STATUS_CONFIG = {
@@ -166,6 +168,18 @@ const SuperAdminDashboard = () => {
                                 >
                                     👥 User Roles
                                 </button>
+                                <button
+                                    onClick={() => setActiveTab('MATERIALS')}
+                                    className={`px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${activeTab === 'MATERIALS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                    📦 Materials
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('INVENTORY')}
+                                    className={`px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${activeTab === 'INVENTORY' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                    🏬 Store Inventory
+                                </button>
                             </div>
 
                             <div className="px-4 py-2.5 rounded-xl bg-white/80 backdrop-blur-sm border border-[#7c3aed]/10 shadow-sm flex items-center gap-3">
@@ -186,6 +200,10 @@ const SuperAdminDashboard = () => {
 
                     {activeTab === 'USERS' ? (
                         <UserManagementSection />
+                    ) : activeTab === 'MATERIALS' ? (
+                        <MaterialsPage />
+                    ) : activeTab === 'INVENTORY' ? (
+                        <StoreInventoryPage />
                     ) : (
                         <>
 

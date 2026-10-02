@@ -3,6 +3,7 @@ import SuperAdminReviewModal from '../../requests/SuperAdminReviewModal';
 import SARequestDetailModal from '../../requests/SARequestDetailModal';
 import { requestService } from '../../../services/requestService';
 import { formatDate } from '../../../utils/dateUtils';
+import Pagination from '../../common/Pagination';
 
 const ApprovalQueue = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -15,6 +16,12 @@ const ApprovalQueue = () => {
     const [error, setError] = useState(null);
     const [viewMode, setViewMode] = useState('Pending'); // 'Pending' or 'History'
     const [actionLoading, setActionLoading] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [viewMode]);
 
     const fetchRequests = async () => {
         try {
@@ -159,7 +166,7 @@ const ApprovalQueue = () => {
                     </div>
                 )}
 
-                {!loading && requests.map((item, i) => (
+                {!loading && requests.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((item, i) => (
                     <div key={i} className="border border-[#dadce0] rounded-[12px] p-4 hover:shadow-sm transition-shadow">
                         <div className="flex justify-between mb-2">
                             <span className={`text-[14px] font-bold ${item.isPending ? 'text-[#f9ab00]' : 'text-[#137333]'}`}>{item.amount}</span>
@@ -192,6 +199,16 @@ const ApprovalQueue = () => {
                         </div>
                     </div>
                 ))}
+                {requests.length > 0 && (
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={requests.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
+                )}
             </div>
 
             <button

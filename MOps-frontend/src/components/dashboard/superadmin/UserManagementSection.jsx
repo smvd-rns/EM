@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../../../services/userService';
 import { useAuth } from '../../../context/AuthContext';
+import Pagination from '../../common/Pagination';
 
 const ROLES = [
     { value: 'REQUESTER', label: 'Requester', color: 'bg-surface-variant text-on-surface-variant border-outline' },
@@ -17,7 +18,13 @@ const UserManagementSection = () => {
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('ALL');
     const [updatingId, setUpdatingId] = useState(null);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
@@ -57,12 +64,30 @@ const UserManagementSection = () => {
         }
     };
 
+    const handleDeleteUser = async (targetUser) => {
+        if (!targetUser) return;
+        setDeletingId(targetUser.id);
+        try {
+            await userService.deleteUser(targetUser.id);
+            setUsers(prev => prev.filter(u => u.id !== targetUser.id));
+            setToastMessage(`🗑️ User ${targetUser.name || targetUser.username || targetUser.email} deleted successfully!`);
+            setTimeout(() => setToastMessage(null), 3500);
+            setUserToDelete(null);
+        } catch (e) {
+            alert('Failed to delete user: ' + (e.message || 'Unknown error'));
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     const filteredUsers = users.filter(u => {
         const matchesSearch = (u.name || u.username || '').toLowerCase().includes(search.toLowerCase()) ||
                               (u.email || '').toLowerCase().includes(search.toLowerCase());
         const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
         return matchesSearch && matchesRole;
     });
+
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     if (!isSuperAdmin) {
         return (
@@ -75,7 +100,7 @@ const UserManagementSection = () => {
     }
 
     return (
-        <div className="bg-surface rounded-3xl border border-outline shadow-2xl p-6 sm:p-8 animate-fadeUp">
+        <div className="bg-surface rounded-3xl border border-outline shadow-2xl p-6 sm:p-8 animate-fadeUp relative">
             {/* Header & Controls */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8 pb-6 border-b border-outline">
                 <div>
@@ -163,53 +188,129 @@ const UserManagementSection = () => {
                                 <th className="pb-3 px-4">Email</th>
                                 <th className="pb-3 px-4">Contact</th>
                                 <th className="pb-3 px-4">Current Role</th>
-                                <th className="pb-3 px-4 text-right">Assign Role</th>
+                                <th className="pb-3 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline/50 text-[14px]">
-                            {filteredUsers.map(user => {
-                                const currentRoleObj = ROLES.find(r => r.value === user.role) || { label: user.role, color: 'bg-surface-variant text-on-surface-variant border-outline' };
-                                const isUpdating = updatingId === user.id;
+                            {paginatedUsers.map(userItem => {
+                                const currentRoleObj = ROLES.find(r => r.value === userItem.role) || { label: userItem.role, color: 'bg-surface-variant text-on-surface-variant border-outline' };
+                                const isUpdating = updatingId === userItem.id;
+                                const isDeleting = deletingId === userItem.id;
+                                const isCurrentUser = user?.id === userItem.id;
 
                                 return (
-                                    <tr key={user.id} className="hover:bg-surface-variant/40 transition-colors">
+                                    <tr key={userItem.id} className="hover:bg-surface-variant/40 transition-colors">
                                         <td className="py-4 px-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent text-white flex items-center justify-center font-bold text-[14px] shadow-md">
-                                                    {(user.name || user.username || 'U').substring(0, 2).toUpperCase()}
+                                                    {(userItem.name || userItem.username || 'U').substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-on-surface">{user.name || user.username || 'Unnamed User'}</div>
-                                                    <div className="text-[12px] text-on-surface-variant">ID: {user.id.substring(0, 8)}...</div>
+                                                    <div className="font-bold text-on-surface flex items-center gap-2">
+                                                        {userItem.name || userItem.username || 'Unnamed User'}
+                                                        {isCurrentUser && (
+                                                            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                                                                You
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[12px] text-on-surface-variant">ID: {userItem.id.substring(0, 8)}...</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-4 text-accent font-medium">{user.email}</td>
-                                        <td className="py-4 px-4 text-on-surface-variant font-medium">{user.mobileNumber}</td>
+                                        <td className="py-4 px-4 text-accent font-medium">{userItem.email}</td>
+                                        <td className="py-4 px-4 text-on-surface-variant font-medium">{userItem.mobileNumber}</td>
                                         <td className="py-4 px-4">
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold border ${currentRoleObj.color}`}>
                                                 {currentRoleObj.label}
                                             </span>
                                         </td>
                                         <td className="py-4 px-4 text-right">
-                                            <select
-                                                value={user.role}
-                                                disabled={isUpdating}
-                                                onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                                                className="h-10 px-3 rounded-xl border border-outline bg-surface-variant text-on-surface text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all cursor-pointer disabled:opacity-50"
-                                            >
-                                                {ROLES.map(r => (
-                                                    <option key={r.value} value={r.value} className="bg-surface text-on-surface">
-                                                        Change to: {r.label}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <select
+                                                    value={userItem.role}
+                                                    disabled={isUpdating || isDeleting}
+                                                    onChange={(e) => handleRoleChange(userItem.id, e.target.value)}
+                                                    className="h-10 px-3 rounded-xl border border-outline bg-surface-variant text-on-surface text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition-all cursor-pointer disabled:opacity-50"
+                                                >
+                                                    {ROLES.map(r => (
+                                                        <option key={r.value} value={r.value} className="bg-surface text-on-surface">
+                                                            Change to: {r.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                <button
+                                                    onClick={() => {
+                                                        if (isCurrentUser) {
+                                                            alert('Action restricted: You cannot delete your currently logged-in account.');
+                                                            return;
+                                                        }
+                                                        setUserToDelete(userItem);
+                                                    }}
+                                                    disabled={isUpdating || isDeleting || isCurrentUser}
+                                                    title={isCurrentUser ? "Cannot delete logged-in account" : "Delete user"}
+                                                    className="h-10 px-3 rounded-xl border border-error/30 bg-error/10 text-error hover:bg-error hover:text-white transition-all text-[13px] font-bold flex items-center gap-1.5 disabled:opacity-40 disabled:hover:bg-error/10 disabled:hover:text-error cursor-pointer"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                    <span className="hidden sm:inline">Delete</span>
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
                             })}
                         </tbody>
                     </table>
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={filteredUsers.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {userToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+                    <div className="bg-surface border border-outline rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-scaleUp">
+                        <div className="w-12 h-12 rounded-2xl bg-error/10 text-error flex items-center justify-center text-2xl mx-auto mb-4 border border-error/20">
+                            🗑️
+                        </div>
+                        <h3 className="text-xl font-bold font-display text-on-surface text-center mb-2">Delete User Account</h3>
+                        <p className="text-sm text-on-surface-variant text-center mb-6">
+                            Are you sure you want to delete <strong className="text-on-surface">{userToDelete.name || userToDelete.username || 'this user'}</strong> (<span className="text-accent">{userToDelete.email}</span>)? This action cannot be undone.
+                        </p>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setUserToDelete(null)}
+                                disabled={deletingId === userToDelete.id}
+                                className="px-5 py-2.5 rounded-xl border border-outline text-on-surface font-semibold text-[14px] hover:bg-surface-variant transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDeleteUser(userToDelete)}
+                                disabled={deletingId === userToDelete.id}
+                                className="px-5 py-2.5 rounded-xl bg-error text-white font-bold text-[14px] hover:bg-error/90 transition-all flex items-center gap-2 shadow-lg shadow-error/20 disabled:opacity-50 cursor-pointer"
+                            >
+                                {deletingId === userToDelete.id ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    'Delete User'
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

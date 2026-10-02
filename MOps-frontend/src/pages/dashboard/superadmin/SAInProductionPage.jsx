@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { requestService } from '../../../services/requestService';
+import Pagination from '../../../components/common/Pagination';
 
 /**
  * SAInProductionPage — Super Admin view of requests currently in production.
@@ -10,6 +11,8 @@ const SAInProductionPage = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const fetchData = async () => {
         setLoading(true);
@@ -96,7 +99,7 @@ const SAInProductionPage = () => {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {requests.map((req) => {
+                    {requests.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((req) => {
                         const isExpanded = expandedId === req.id;
                         return (
                             <div key={req.id} className="card overflow-hidden transition-all">
@@ -188,6 +191,14 @@ const SAInProductionPage = () => {
                             </div>
                         );
                     })}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={requests.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
                 </div>
             )}
         </div>

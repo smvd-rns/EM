@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { requestService } from '../../../services/requestService';
 import { inventoryService } from '../../../services/inventoryService';
+import Pagination from '../../../components/common/Pagination';
 
 const StoreIssuancePage = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const loadData = async () => {
         setLoading(true);
@@ -84,7 +87,7 @@ const StoreIssuancePage = () => {
                                     <td colSpan="6" className="px-6 py-12 text-center text-slate-400 italic">No pending material issuances in queue.</td>
                                 </tr>
                             ) : (
-                                requests.map(req => (
+                                requests.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(req => (
                                     <tr key={req.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-slate-900 text-[15px] flex items-center gap-1.5">
@@ -126,6 +129,14 @@ const StoreIssuancePage = () => {
                             )}
                         </tbody>
                     </table>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={requests.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
                 </div>
             </div>
         </div>

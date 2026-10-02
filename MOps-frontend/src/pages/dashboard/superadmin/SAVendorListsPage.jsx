@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { quotationService } from '../../../services/materialService';
 import { downloadVendorListPDF } from '../../../utils/downloadUtils';
+import Pagination from '../../../components/common/Pagination';
+
+import AddVendorModal from '../../../components/vendors/AddVendorModal';
 
 /**
  * SAVendorListsPage — Super Admin view of aggregated vendor purchase lists.
@@ -12,6 +15,9 @@ const SAVendorListsPage = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [expandedVendor, setExpandedVendor] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
     const fetchLists = async () => {
         setLoading(true);
@@ -25,7 +31,10 @@ const SAVendorListsPage = () => {
         }
     };
 
-    useEffect(() => { fetchLists(); }, [filter]);
+    useEffect(() => {
+        fetchLists();
+        setCurrentPage(1);
+    }, [filter]);
 
     // Group by vendor name
     const grouped = lists.reduce((acc, item) => {
@@ -51,7 +60,14 @@ const SAVendorListsPage = () => {
                         Aggregated procurement requirements across all approved requests, grouped by vendor.
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={() => setIsVendorModalOpen(true)}
+                        className="px-4 py-2 rounded-full text-[13px] font-medium bg-[#1a73e8] text-white hover:bg-[#1557b0] shadow-sm transition-all flex items-center gap-1.5"
+                    >
+                        <span>+</span>
+                        <span>Add New Vendor</span>
+                    </button>
                     {['all', 'pending'].map(f => (
                         <button
                             key={f}
@@ -107,7 +123,7 @@ const SAVendorListsPage = () => {
                 </div>
             ) : (
                 <div className="space-y-5">
-                    {vendorEntries.map(([vendorName, data]) => {
+                    {vendorEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize).map(([vendorName, data]) => {
                         const isExpanded = expandedVendor === vendorName;
                         return (
                             <div key={vendorName} className="card overflow-hidden transition-all">
@@ -198,8 +214,22 @@ const SAVendorListsPage = () => {
                             </div>
                         );
                     })}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={vendorEntries.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
                 </div>
             )}
+
+            <AddVendorModal
+                isOpen={isVendorModalOpen}
+                onClose={() => setIsVendorModalOpen(false)}
+                onVendorAdded={fetchLists}
+            />
         </div>
     );
 };

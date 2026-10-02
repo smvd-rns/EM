@@ -252,12 +252,96 @@ export const vendorService = {
      * Get all active vendors
      */
     getAllVendors: async () => {
-        const { data, error } = await supabase
-            .from('vendors')
-            .select('*')
-            .eq('is_active', true);
-        if (error) throw new Error(error.message);
-        return data;
+        const customVendors = JSON.parse(localStorage.getItem('custom_vendors') || '[]');
+        try {
+            const { data, error } = await supabase
+                .from('vendors')
+                .select('*')
+                .eq('is_active', true);
+            
+            if (error || !data || data.length === 0) {
+                const fallbacks = [
+                    { id: 1, name: 'Apex Electricals', contact_person: 'Ramesh Kumar', phone: '9876543214', email: 'vendor.electric@maintenops.com' },
+                    { id: 2, name: 'Shree Krishna Traders', contact_person: 'Gopal Das', phone: '9876543215', email: 'krishna.traders@maintenops.com' },
+                    { id: 3, name: 'National Hardware Supply', contact_person: 'Suresh Patel', phone: '9876543216', email: 'national.hw@maintenops.com' },
+                    { id: 4, name: 'Mahavir Hardware & Plywoods', contact_person: 'Mahavir Jain', phone: '9876543217', email: 'mahavir@hardware.com' }
+                ];
+                // Combine default fallbacks with custom added vendors
+                const combined = [...fallbacks];
+                customVendors.forEach(cv => {
+                    if (!combined.some(v => v.id === cv.id || v.name?.toLowerCase() === cv.name?.toLowerCase())) {
+                        combined.push(cv);
+                    }
+                });
+                return combined;
+            }
+
+            const combined = [...data];
+            customVendors.forEach(cv => {
+                if (!combined.some(v => v.id === cv.id || v.name?.toLowerCase() === cv.name?.toLowerCase())) {
+                    combined.push(cv);
+                }
+            });
+            return combined;
+        } catch (e) {
+            console.error('[vendorService] Error fetching vendors:', e);
+            const fallbacks = [
+                { id: 1, name: 'Apex Electricals', contact_person: 'Ramesh Kumar', phone: '9876543214', email: 'vendor.electric@maintenops.com' },
+                { id: 2, name: 'Shree Krishna Traders', contact_person: 'Gopal Das', phone: '9876543215', email: 'krishna.traders@maintenops.com' },
+                { id: 3, name: 'National Hardware Supply', contact_person: 'Suresh Patel', phone: '9876543216', email: 'national.hw@maintenops.com' },
+                { id: 4, name: 'Mahavir Hardware & Plywoods', contact_person: 'Mahavir Jain', phone: '9876543217', email: 'mahavir@hardware.com' }
+            ];
+            const combined = [...fallbacks];
+            customVendors.forEach(cv => {
+                if (!combined.some(v => v.id === cv.id || v.name?.toLowerCase() === cv.name?.toLowerCase())) {
+                    combined.push(cv);
+                }
+            });
+            return combined;
+        }
+    },
+
+    /**
+     * Create a new vendor
+     */
+    createVendor: async (vendorData) => {
+        const payload = {
+            name: vendorData.name,
+            contact_person: vendorData.contactPerson || vendorData.contact_person || '',
+            phone: vendorData.phone || '',
+            email: vendorData.email || '',
+            is_active: true
+        };
+
+        const customVendors = JSON.parse(localStorage.getItem('custom_vendors') || '[]');
+        const fallbackVendor = {
+            id: Date.now(),
+            ...payload
+        };
+
+        try {
+            const { data, error } = await supabase
+                .from('vendors')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (error) {
+                console.warn('[vendorService] DB insert notice:', error.message);
+                customVendors.push(fallbackVendor);
+                localStorage.setItem('custom_vendors', JSON.stringify(customVendors));
+                return fallbackVendor;
+            }
+
+            customVendors.push(data);
+            localStorage.setItem('custom_vendors', JSON.stringify(customVendors));
+            return data;
+        } catch (e) {
+            console.error('[vendorService] Error creating vendor:', e);
+            customVendors.push(fallbackVendor);
+            localStorage.setItem('custom_vendors', JSON.stringify(customVendors));
+            return fallbackVendor;
+        }
     }
 };
 

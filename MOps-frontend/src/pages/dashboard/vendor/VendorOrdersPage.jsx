@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { vendorService } from '../../../services/vendorService';
+import Pagination from '../../../components/common/Pagination';
 
 const VendorOrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [actionLoading, setActionLoading] = useState(false);
@@ -27,12 +30,18 @@ const VendorOrdersPage = () => {
         loadOrders();
     }, [loadOrders]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, statusFilter]);
+
     const filteredOrders = orders.filter(o => {
         const matchesSearch = o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
                               o.materialName.toLowerCase().includes(search.toLowerCase());
         const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
+
+    const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const handleUpdateStatus = async (orderId, newStatus) => {
         setActionLoading(true);
@@ -128,7 +137,7 @@ const VendorOrdersPage = () => {
                                     <td colSpan="7" className="px-6 py-12 text-center text-slate-400 italic">No purchase orders found matching your filters.</td>
                                 </tr>
                             ) : (
-                                filteredOrders.map(order => (
+                                paginatedOrders.map(order => (
                                     <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
                                         <td className="px-6 py-4 font-bold text-blue-600">
                                             {order.orderNumber}
@@ -168,6 +177,14 @@ const VendorOrdersPage = () => {
                             )}
                         </tbody>
                     </table>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={filteredOrders.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
                 </div>
 
                 {/* Order Detail Modal */}

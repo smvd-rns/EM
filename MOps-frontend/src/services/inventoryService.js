@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 
 export const inventoryService = {
     /**
-     * Get all inventory items with material details
+     * Get all inventory items with material and specification details
      */
     getAllInventory: async () => {
         try {
@@ -20,6 +20,10 @@ export const inventoryService = {
                         name,
                         category,
                         default_unit
+                    ),
+                    material_specifications (
+                        id,
+                        specification
                     )
                 `);
 
@@ -32,6 +36,7 @@ export const inventoryService = {
                 id: item.id,
                 materialId: item.material_id,
                 specificationId: item.specification_id,
+                specificationText: item.material_specifications?.specification || '',
                 materialName: item.materials?.name || 'Store Item',
                 category: item.materials?.category || 'General',
                 unit: item.materials?.default_unit || 'piece',
@@ -86,6 +91,9 @@ export const inventoryService = {
                 console.warn('[inventoryService] Add item fallback:', error?.message);
                 return {
                     id: Date.now(),
+                    materialId: newItem.materialId,
+                    specificationId: newItem.specificationId,
+                    specificationText: newItem.specificationText || '',
                     materialName: newItem.materialName,
                     category: newItem.category || 'General',
                     unit: newItem.unit || 'piece',
@@ -99,6 +107,9 @@ export const inventoryService = {
             console.error('[inventoryService] Error adding inventory item:', e);
             return {
                 id: Date.now(),
+                materialId: newItem.materialId,
+                specificationId: newItem.specificationId,
+                specificationText: newItem.specificationText || '',
                 materialName: newItem.materialName,
                 category: newItem.category || 'General',
                 unit: newItem.unit || 'piece',
@@ -130,12 +141,12 @@ export const inventoryService = {
      * Fallback Inventory Data when DB table is being initialized
      */
     getFallbackInventory: () => [
-        { id: 1, materialId: 101, materialName: 'Commercial Plywood 18mm', category: 'Material', unit: 'sheet', quantityAvailable: 45, minThreshold: 15, lastUpdated: new Date().toISOString() },
-        { id: 2, materialId: 102, materialName: 'Sunmica High Gloss 1mm', category: 'Material', unit: 'sheet', quantityAvailable: 8, minThreshold: 10, lastUpdated: new Date().toISOString() },
-        { id: 3, materialId: 103, materialName: 'Iron Nails 1 inch', category: 'Hardware', unit: 'kg', quantityAvailable: 25, minThreshold: 5, lastUpdated: new Date().toISOString() },
-        { id: 4, materialId: 104, materialName: 'Fevicol SH Adhesive 5kg', category: 'Consumable', unit: 'can', quantityAvailable: 12, minThreshold: 4, lastUpdated: new Date().toISOString() },
-        { id: 5, materialId: 105, materialName: 'LED Tube Light 20W', category: 'Hardware', unit: 'piece', quantityAvailable: 4, minThreshold: 10, lastUpdated: new Date().toISOString() },
-        { id: 6, materialId: 106, materialName: 'Copper Wire 1.5 sqmm', category: 'Hardware', unit: 'bundle', quantityAvailable: 18, minThreshold: 5, lastUpdated: new Date().toISOString() },
-        { id: 7, materialId: 107, materialName: 'Asian Paints White 20L', category: 'Consumable', unit: 'bucket', quantityAvailable: 2, minThreshold: 5, lastUpdated: new Date().toISOString() }
+        { id: 1, materialId: 101, specificationId: 201, specificationText: '18mm Water Resistant (IS 303)', materialName: 'Commercial Plywood', category: 'Material', unit: 'sheet', quantityAvailable: 45, minThreshold: 15, lastUpdated: new Date().toISOString() },
+        { id: 2, materialId: 102, specificationId: 204, specificationText: '1.5 sqmm Red (Flame Retardant)', materialName: 'Copper Wire', category: 'Electrical', unit: 'roll', quantityAvailable: 18, minThreshold: 5, lastUpdated: new Date().toISOString() },
+        { id: 3, materialId: 103, specificationId: 207, specificationText: '1 inch Flat Head', materialName: 'Iron Nails', category: 'Hardware', unit: 'kg', quantityAvailable: 25, minThreshold: 5, lastUpdated: new Date().toISOString() },
+        { id: 4, materialId: 104, specificationId: 209, specificationText: '5kg Standard Bucket', materialName: 'Fevicol SH Adhesive', category: 'Consumable', unit: 'can', quantityAvailable: 12, minThreshold: 4, lastUpdated: new Date().toISOString() },
+        { id: 5, materialId: 105, specificationId: 211, specificationText: '20W Cool Day White 6500K', materialName: 'LED Tube Light', category: 'Electrical', unit: 'piece', quantityAvailable: 4, minThreshold: 10, lastUpdated: new Date().toISOString() },
+        { id: 6, materialId: 106, specificationId: 213, specificationText: 'White 20L Premium Emulsion', materialName: 'Asian Paints', category: 'Consumable', unit: 'bucket', quantityAvailable: 2, minThreshold: 5, lastUpdated: new Date().toISOString() },
+        { id: 7, materialId: 107, specificationId: 215, specificationText: '2 inch Heavy Duty Schedule 40', materialName: 'PVC Pipe', category: 'Plumbing', unit: 'length', quantityAvailable: 30, minThreshold: 8, lastUpdated: new Date().toISOString() }
     ]
 };

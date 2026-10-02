@@ -55,7 +55,7 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="queue" element={<ActionQueuePage />} />
                 <Route path="materials" element={<MaterialsPage />} />
-
+                <Route path="vendor-lists" element={<SAVendorListsPage />} />
                 <Route path="create-quotation/:requestId" element={<CreateQuotationPage />} />
               </Route>
             </Route>
@@ -83,6 +83,8 @@ function App() {
               <Route path="/super-admin" element={<DashboardLayout />}>
                 <Route index element={<SuperAdminDashboard />} />
                 <Route path="users" element={<UsersPage />} />
+                <Route path="materials" element={<MaterialsPage />} />
+                <Route path="inventory" element={<StoreInventoryPage />} />
                 <Route path="approvals" element={<ApprovalQueuePage />} />
                 <Route path="admins" element={<SystemAdminsPage />} />
                 <Route path="vendor-lists" element={<SAVendorListsPage />} />

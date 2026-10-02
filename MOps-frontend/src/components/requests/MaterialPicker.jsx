@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { materialService, vendorService } from '../../services/materialService';
+import AddVendorModal from '../vendors/AddVendorModal';
 
 /**
  * MaterialPicker — lets admin select materials with specs, all vendors, price, and quantity.
@@ -10,6 +11,7 @@ const MaterialPicker = ({ onMaterialsChange, initialItems = [] }) => {
     const [allVendors, setAllVendors] = useState([]);
     const [selectedItems, setSelectedItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
     // Track if we've initialized the items from prop
     const [hasInitialized, setHasInitialized] = useState(false);
@@ -268,9 +270,19 @@ const MaterialPicker = ({ onMaterialsChange, initialItems = [] }) => {
                     {/* ── Vendor ── */}
                     {editingIndex === null && (
                         <div className={!currentItem.materialId ? 'opacity-40 pointer-events-none select-none' : ''}>
-                            <label className="block text-[12px] font-['Google_Sans',sans-serif] font-medium text-[#5f6368] mb-1">
-                                Choose Vendor <span className="text-[#c5221f]">*</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="block text-[12px] font-['Google_Sans',sans-serif] font-medium text-[#5f6368]">
+                                    Choose Vendor <span className="text-[#c5221f]">*</span>
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsVendorModalOpen(true)}
+                                    disabled={!currentItem.materialId}
+                                    className="text-[11px] text-[#1a73e8] font-bold hover:underline disabled:opacity-50"
+                                >
+                                    + Add New Vendor
+                                </button>
+                            </div>
                             <select
                                 value={currentItem.vendorId}
                                 onChange={e => setCurrentItem(prev => ({ ...prev, vendorId: Number(e.target.value) }))}
@@ -597,6 +609,16 @@ const MaterialPicker = ({ onMaterialsChange, initialItems = [] }) => {
                     </div>
                 </div>
             )}
+
+            {/* Add Vendor Modal */}
+            <AddVendorModal
+                isOpen={isVendorModalOpen}
+                onClose={() => setIsVendorModalOpen(false)}
+                onVendorAdded={(newVendor) => {
+                    setAllVendors(prev => [...prev, newVendor]);
+                    setCurrentItem(prev => ({ ...prev, vendorId: newVendor.id }));
+                }}
+            />
         </div>
     );
 };

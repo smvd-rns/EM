@@ -5,29 +5,27 @@ export const userService = {
      * Fetch all user profiles directly from Supabase profiles table (Single Source of Truth)
      */
     getAllUsers: async () => {
-        // Clean up legacy overrides cache
+        // Clean up legacy overrides cache & stale local filters so real database records are always visible
         localStorage.removeItem('user_role_overrides');
+        localStorage.removeItem('deleted_user_ids');
 
         try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
+                .or('is_deleted.eq.false,is_deleted.is.null')
                 .order('created_at', { ascending: false });
 
-            if (error) {
-                console.warn('[userService] Error fetching profiles from DB, using fallback:', error);
-                return userService.getFallbackUsers();
-            }
-            if (!data || data.length === 0) {
+            if (error || !data || data.length === 0) {
                 return userService.getFallbackUsers();
             }
 
             return data.map(u => ({
                 id: u.id,
                 email: u.email || u.user_metadata?.email || `${u.username || 'user'}@maintenops.com`,
-                username: u.username || 'User',
-                name: u.username || 'User',
-                mobileNumber: u.mobile_number || 'N/A',
+                username: u.username || u.name || 'User',
+                name: u.name || u.username || u.email?.split('@')[0] || 'User',
+                mobileNumber: u.mobile_number || u.phone || 'N/A',
                 role: u.role || 'REQUESTER',
                 createdAt: u.created_at || new Date().toISOString()
             }));
@@ -68,6 +66,29 @@ export const userService = {
             return { id: userId, role: newRole, status };
         } catch (e) {
             console.error('[userService] Error in updateUserRole:', e);
+            throw e;
+        }
+    },
+
+    /**
+     * Delete user profile directly from Supabase profiles table
+     */
+    deleteUser: async (userId) => {
+        try {
+            // Soft delete directly from Supabase profiles table
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_deleted: true })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('[userService] Supabase soft delete error:', error.message);
+                throw new Error(`Database Error: ${error.message}`);
+            }
+
+            return { id: userId, success: true };
+        } catch (e) {
+            console.error('[userService] Error in deleteUser:', e);
             throw e;
         }
     },

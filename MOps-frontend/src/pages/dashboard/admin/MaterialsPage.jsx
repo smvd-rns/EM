@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { materialService } from '../../../services/materialService';
 import Button from '../../../components/Button';
+import Pagination from '../../../components/common/Pagination';
+import AddVendorModal from '../../../components/vendors/AddVendorModal';
 
 const MaterialsPage = () => {
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
     const [editingMaterial, setEditingMaterial] = useState(null);
+    const [isCustomCategory, setIsCustomCategory] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [formData, setFormData] = useState({
         name: '',
         category: 'Material',
@@ -15,6 +23,12 @@ const MaterialsPage = () => {
         specifications: []
     });
     const [newSpec, setNewSpec] = useState({ specification: '', description: '' });
+
+    const defaultCategories = ['Material', 'Labor', 'Hardware', 'Consumable', 'Electrical', 'Plumbing', 'Civil'];
+    const allCategories = Array.from(new Set([
+        ...defaultCategories,
+        ...materials.map(m => m.category).filter(Boolean)
+    ]));
 
     useEffect(() => {
         fetchMaterials();
@@ -41,6 +55,7 @@ const MaterialsPage = () => {
                 defaultUnit: material.defaultUnit || 'piece',
                 specifications: material.specifications || []
             });
+            setIsCustomCategory(false);
         } else {
             setEditingMaterial(null);
             setFormData({
@@ -49,6 +64,7 @@ const MaterialsPage = () => {
                 defaultUnit: 'piece',
                 specifications: []
             });
+            setIsCustomCategory(false);
         }
         setIsModalOpen(true);
     };
@@ -113,6 +129,8 @@ const MaterialsPage = () => {
                cat.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
+    const paginatedMaterials = filteredMaterials.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
     return (
         <div className="relative min-h-screen pb-24">
 
@@ -128,12 +146,20 @@ const MaterialsPage = () => {
                         <p className="text-[13px] font-ui text-on-surface-variant/60 mt-0.5">Manage the internal material database and specifications.</p>
                     </div>
 
-                    <button 
-                        onClick={() => handleOpenModal()}
-                        className="px-6 py-2.5 rounded-xl text-[13px] font-ui font-bold text-white bg-gradient-to-r from-[#6366f1] to-[#818cf8] shadow-md shadow-[#6366f1]/20 hover:opacity-90 transition-all flex items-center gap-2"
-                    >
-                        <span>+</span> Add Material
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button 
+                            onClick={() => setIsVendorModalOpen(true)}
+                            className="px-5 py-2.5 rounded-xl text-[13px] font-ui font-bold text-sky-700 bg-sky-50 border border-sky-200 hover:bg-sky-100 transition-all flex items-center gap-2"
+                        >
+                            <span>🏢</span> Add New Vendor
+                        </button>
+                        <button 
+                            onClick={() => handleOpenModal()}
+                            className="px-6 py-2.5 rounded-xl text-[13px] font-ui font-bold text-white bg-gradient-to-r from-[#6366f1] to-[#818cf8] shadow-md shadow-[#6366f1]/20 hover:opacity-90 transition-all flex items-center gap-2"
+                        >
+                            <span>+</span> Add Material
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -171,7 +197,7 @@ const MaterialsPage = () => {
                                 <tr>
                                     <td colSpan="5" className="px-6 py-12 text-center text-on-surface-variant/40 font-ui italic">No materials found matching your search.</td>
                                 </tr>
-                            ) : filteredMaterials.map(m => (
+                            ) : paginatedMaterials.map(m => (
                                 <tr key={m.materialId || m.id} className="hover:bg-[#6366f1]/[0.02] transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="text-[14px] font-display font-medium text-on-surface">{m.materialName || m.name}</div>
@@ -212,6 +238,15 @@ const MaterialsPage = () => {
                             ))}
                         </tbody>
                     </table>
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalItems={filteredMaterials.length}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={setPageSize}
+                        pageSizeOptions={[10, 30, 50]}
+                    />
                 </div>
             </div>
 
@@ -241,17 +276,67 @@ const MaterialsPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-ui font-bold text-on-surface-variant/60 uppercase tracking-wider mb-2">Category</label>
-                                    <select 
-                                        value={formData.category}
-                                        onChange={e => setFormData({...formData, category: e.target.value})}
-                                        className="w-full h-11 px-4 border border-[#dde1ed] rounded-xl text-[14px] font-ui bg-white focus:outline-none focus:border-[#6366f1] transition-all"
-                                    >
-                                        <option value="Material">Material</option>
-                                        <option value="Labor">Labor</option>
-                                        <option value="Hardware">Hardware</option>
-                                        <option value="Consumable">Consumable</option>
-                                    </select>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-[11px] font-ui font-bold text-on-surface-variant/60 uppercase tracking-wider">Category</label>
+                                        {!isCustomCategory && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsCustomCategory(true);
+                                                    setFormData(prev => ({ ...prev, category: '' }));
+                                                }}
+                                                className="text-[11px] font-bold text-[#6366f1] hover:underline cursor-pointer"
+                                            >
+                                                + New Category
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {!isCustomCategory ? (
+                                        <select 
+                                            value={formData.category}
+                                            onChange={e => {
+                                                if (e.target.value === 'NEW_CATEGORY') {
+                                                    setIsCustomCategory(true);
+                                                    setFormData(prev => ({ ...prev, category: '' }));
+                                                } else {
+                                                    setFormData(prev => ({ ...prev, category: e.target.value }));
+                                                }
+                                            }}
+                                            className="w-full h-11 px-4 border border-[#dde1ed] rounded-xl text-[14px] font-ui bg-white focus:outline-none focus:border-[#6366f1] transition-all cursor-pointer"
+                                        >
+                                            {allCategories.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                            <option value="NEW_CATEGORY">➕ Add New Category...</option>
+                                        </select>
+                                    ) : (
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    required
+                                                    type="text" 
+                                                    value={formData.category}
+                                                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                    className="flex-1 h-11 px-4 border border-[#dde1ed] rounded-xl text-[14px] font-ui focus:outline-none focus:border-[#6366f1] transition-all"
+                                                    placeholder="Enter new category name..."
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsCustomCategory(false);
+                                                        setFormData(prev => ({ ...prev, category: allCategories[0] || 'Material' }));
+                                                    }}
+                                                    className="h-11 px-3 border border-[#dde1ed] rounded-xl text-[12px] font-bold text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer"
+                                                    title="Back to dropdown"
+                                                >
+                                                    ✕ Select Existing
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-[#6366f1] font-medium">Type custom category name to add to catalog.</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-[11px] font-ui font-bold text-on-surface-variant/60 uppercase tracking-wider mb-2">Default Unit</label>
@@ -332,6 +417,12 @@ const MaterialsPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Add Vendor Modal */}
+            <AddVendorModal
+                isOpen={isVendorModalOpen}
+                onClose={() => setIsVendorModalOpen(false)}
+            />
         </div>
     );
 };

@@ -1,13 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useRequests } from '../../context/RequestContext';
 import RequestDetailsModal from '../../components/requests/RequestDetailsModal';
 import Button from '../../components/Button';
+import Pagination from '../../components/common/Pagination';
 
 const RequestsPage = () => {
     const { requests, refreshRequests, loading, error } = useRequests();
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | ACTIVE | COMPLETED | REJECTED | PAYMENT_PENDING
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [query, statusFilter]);
 
     const handleApprovalSuccess = () => {
         refreshRequests();
@@ -81,6 +88,10 @@ const RequestsPage = () => {
             return hay.includes(q);
         });
     }, [requests, query, statusFilter]);
+
+    const paginatedRequests = useMemo(() => {
+        return filteredRequests.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    }, [filteredRequests, currentPage, pageSize]);
 
     const counts = useMemo(() => {
         const active = requests.filter(r => r.status !== 'COMPLETED').length;
@@ -192,7 +203,7 @@ const RequestsPage = () => {
                 {/* Mobile cards */}
                 <div className="block lg:hidden px-6 py-6">
                     <div className="grid grid-cols-1 gap-4">
-                        {filteredRequests.map((req, i) => (
+                        {paginatedRequests.map((req, i) => (
                             <button
                                 key={i}
                                 type="button"
@@ -249,7 +260,7 @@ const RequestsPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline/10">
-                            {filteredRequests.map((req, i) => (
+                            {paginatedRequests.map((req, i) => (
                                 <tr
                                     key={i}
                                     onClick={() => setSelectedRequest(req)}
@@ -301,6 +312,15 @@ const RequestsPage = () => {
                         </tbody>
                     </table>
                 </div>
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={filteredRequests.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 30, 50]}
+                />
                 </>
                 ) : null}
             </div>
